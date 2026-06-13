@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Slinky — Meet Someone New</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --purple: #6C5CE7;
+    --purple-dark: #534AB7;
+    --purple-light: #EEEDFE;
+    --purple-mid: #AFA9EC;
+    --bg: #F0EFF4;
+    --bg-panel: #18171C;
+    --bg-bar: #ffffff;
+    --text: #1a1a1a;
+    --text-muted: #6b6a72;
+    --border: rgba(0,0,0,0.08);
+    --green: #00b894;
+    --red: #e17055;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  nav {
+    background: var(--bg-bar);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    height: 60px;
+    display: flex;
+    align-items: center;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+
+  .logo-icon { width: 34px; height: 34px; }
+
+  .logo-text {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+
+  .page { display: none; min-height: calc(100vh - 60px); }
+  .page.active { display: flex; flex-direction: column; }
+
+  /* WELCOME */
+  #welcome {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 4rem 2rem;
+  }
+
+  .welcome-inner { max-width: 560px; }
+
+  .welcome-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--purple-light);
+    color: var(--purple-dark);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 5px 14px;
+    border-radius: 999px;
+    margin-bottom: 2rem;
+  }
+
+  .welcome-badge::before {
+    content: '';
+    width: 7px; height: 7px;
+    background: var(--purple);
+    border-radius: 50%;
+    display: inline-block;
+    animation: livepulse 2s ease-in-out infinite;
+  }
+
+  @keyframes livepulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .welcome-h1 {
+    font-size: clamp(2.2rem, 5vw, 3.2rem);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    margin-bottom: 1.25rem;
+  }
+
+  .welcome-h1 span { color: var(--purple); }
+
+  .welcome-sub {
+    font-size: 17px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-bottom: 2.5rem;
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .btn-match {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--purple);
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    padding: 16px 32px;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    letter-spacing: -0.01em;
+    box-shadow: 0 4px 20px rgba(108,92,231,0.35);
+    font-family: inherit;
+  }
+
+  .btn-match:hover { background: var(--purple-dark); transform: translateY(-1px); }
+  .btn-match:active { transform: translateY(0); }
+  .btn-match svg { width: 20px; height: 20px; }
+
+  .welcome-hint {
+    margin-top: 1.25rem;
+    font-size: 13.5px;
+    color: var(--text-muted);
+  }
+
+  .welcome-features {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    margin-top: 3.5rem;
+    flex-wrap: wrap;
+  }
+
+  .feature {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .feature-icon {
+    width: 42px; height: 42px;
+    border-radius: 12px;
+    background: #fff;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .feature-icon svg { width: 20px; height: 20px; color: var(--purple); }
+
+  /* CHAT */
+  #chat {
+    padding: 1.5rem 1.5rem 0;
+    flex: 1;
+    gap: 1rem;
+  }
+
+  .video-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    flex: 1;
+  }
+
+  .video-pane {
+    background: var(--bg-panel);
+    border-radius: 18px;
+    position: relative;
+    overflow: hidden;
+    min-height: 340px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .video-pane video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 18px;
+    display: none;
+  }
+
+  .video-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .video-placeholder svg { width: 48px; height: 48px; color: #4a4858; }
+  .video-placeholder p { color: #5a5869; font-size: 14px; }
+
+  .video-label {
+    position: absolute;
+    top: 14px; left: 14px;
+    background: rgba(0,0,0,0.45);
+    color: rgba(255,255,255,0.75);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 999px;
+    z-index: 2;
+  }
+
+  .connecting-anim {
+    display: none;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .connecting-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--purple-mid);
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+
+  .connecting-dot:nth-child(2) { animation-delay: 0.2s; }
+  .connecting-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes pulse {
+    0%, 80%, 100% { opacity: 0.3; transform: scale(0.85); }
+    40% { opacity: 1; transform: scale(1); }
+  }
+
+  /* BOTTOM BAR */
+  .bottom-bar {
+    background: var(--bg-bar);
+    border-top: 1px solid var(--border);
+    margin: 1rem -1.5rem 0;
+    padding: 0 1.5rem;
+    height: 64px;
+    display: flex;
+    align-items: center;
+  }
+
+  .bar-controls { display: flex; gap: 4px; }
+
+  .bar-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    border-right: 1px solid var(--border);
+    padding: 0 20px 0 16px;
+    height: 64px;
+    cursor: pointer;
+    font-size: 13.5px;
+    color: var(--text);
+    font-family: inherit;
+    transition: background 0.1s;
+  }
+
+  .bar-btn:hover { background: var(--purple-light); }
+  .bar-btn svg { width: 18px; height: 18px; color: var(--purple); }
+  .bar-btn.off svg { color: var(--red); }
+
+  .status {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--green);
+  }
+
+  .status.off { color: var(--red); }
+
+  .bar-spacer { flex: 1; }
+
+  .bar-right { display: flex; }
+
+  .bar-icon-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    border-left: 1px solid var(--border);
+    padding: 0 20px;
+    height: 64px;
+    cursor: pointer;
+    font-size: 13.5px;
+    color: var(--text-muted);
+    font-family: inherit;
+    transition: background 0.1s;
+  }
+
+  .bar-icon-btn:hover { background: #f5f4f8; color: var(--text); }
+  .bar-icon-btn svg { width: 17px; height: 17px; }
+
+  .btn-next {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--purple);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 1rem;
+    transition: background 0.15s;
+    font-family: inherit;
+  }
+
+  .btn-next:hover { background: var(--purple-dark); }
+  .btn-next svg { width: 16px; height: 16px; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-10px);
+    background: #1a1a1a;
+    color: #fff;
+    font-size: 13.5px;
+    padding: 10px 20px;
+    border-radius: 999px;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+    z-index: 100;
+    white-space: nowrap;
+  }
+
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 640px) {
+    .video-grid { grid-template-columns: 1fr; }
+    .welcome-features { gap: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo" onclick="goHome()">
+    <svg class="logo-icon" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="17" cy="17" r="17" fill="#EEEDFE"/>
+      <g transform="translate(7, 5)">
+        <ellipse cx="10" cy="4" rx="6" ry="2.5" stroke="#6C5CE7" stroke-width="1.8" fill="none"/>
+        <ellipse cx="10" cy="8" rx="8" ry="2.5" stroke="#6C5CE7" stroke-width="1.8" fill="none"/>
+        <ellipse cx="10" cy="12" rx="8" ry="2.5" stroke="#6C5CE7" stroke-width="1.8" fill="none"/>
+        <ellipse cx="10" cy="16" rx="6" ry="2.5" stroke="#6C5CE7" stroke-width="1.8" fill="none"/>
+        <ellipse cx="10" cy="20" rx="4" ry="2" stroke="#6C5CE7" stroke-width="1.8" fill="none"/>
+      </g>
+    </svg>
+    <span class="logo-text">slinky</span>
+  </div>
+</nav>
+
+<!-- WELCOME -->
+<div id="welcome" class="page active">
+  <div class="welcome-inner">
+    <div class="welcome-badge">Live now · people are chatting</div>
+    <h1 class="welcome-h1">Meet someone<br><span>completely random.</span></h1>
+    <p class="welcome-sub">One click connects you to a stranger anywhere in the world. No accounts, no profiles — just a conversation.</p>
+    <button class="btn-match" onclick="startChat()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+      Match with a Stranger
+    </button>
+    <p class="welcome-hint">Your camera and mic will be requested on the next screen.</p>
+    <div class="welcome-features">
+      <div class="feature">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+          </svg>
+        </div>
+        HD Video
+      </div>
+      <div class="feature">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        Anonymous
+      </div>
+      <div class="feature">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+        </div>
+        Worldwide
+      </div>
+      <div class="feature">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+        </div>
+        Skip anytime
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CHAT -->
+<div id="chat" class="page">
+  <div class="video-grid">
+    <div class="video-pane">
+      <span class="video-label">You</span>
+      <video id="localVideo" autoplay muted playsinline></video>
+      <div class="video-placeholder" id="localPlaceholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <p>Your video will appear here</p>
+      </div>
+    </div>
+
+    <div class="video-pane">
+      <span class="video-label">Stranger</span>
+      <video id="remoteVideo" autoplay playsinline></video>
+      <div class="video-placeholder" id="remotePlaceholder">
+        <div class="connecting-anim" id="connectingAnim">
+          <div class="connecting-dot"></div>
+          <div class="connecting-dot"></div>
+          <div class="connecting-dot"></div>
+        </div>
+        <svg id="remoteIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="2" y1="12" x2="22" y2="12"/>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </svg>
+        <p id="remoteStatus">Waiting to connect…</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="bar-controls">
+      <button class="bar-btn" id="camBtn" onclick="toggleCamera()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+        </svg>
+        <div>
+          <div style="font-size:13.5px;font-weight:500;">Camera</div>
+          <div class="status" id="camStatus">On</div>
+        </div>
+      </button>
+      <button class="bar-btn" id="micBtn" onclick="toggleMic()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+        <div>
+          <div style="font-size:13.5px;font-weight:500;">Microphone</div>
+          <div class="status" id="micStatus">On</div>
+        </div>
+      </button>
+    </div>
+
+    <div class="bar-spacer"></div>
+
+    <button class="btn-next" onclick="nextStranger()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"/>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+      </svg>
+      Next
+    </button>
+
+    <div class="bar-right">
+      <button class="bar-icon-btn" onclick="showToast('Report sent. Thank you.')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        Report
+      </button>
+      <button class="bar-icon-btn" onclick="showToast('Press Next to find a new match.')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        Help
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ──
+// In production this auto-detects wss:// or ws:// based on the page protocol
+const WS_URL = location.protocol === 'https:'
+  ? `wss://${location.host}`
+  : `ws://${location.host}`;
+
+const ICE_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' }
+];
+
+// ── STATE ──
+let ws = null;
+let pc = null;
+let localStream = null;
+let camOn = true;
+let micOn = true;
+let myRole = null; // 'offerer' | 'answerer'
+
+// ── PAGES ──
+function setPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goHome() {
+  cleanup();
+  setPage('welcome');
+}
+
+// ── START FLOW ──
+async function startChat() {
+  setPage('chat');
+  setRemoteState('waiting');
+  await requestCamera();
+  connectWS();
+}
+
+async function requestCamera() {
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    const vid = document.getElementById('localVideo');
+    vid.srcObject = localStream;
+    vid.style.display = 'block';
+    document.getElementById('localPlaceholder').style.display = 'none';
+  } catch (err) {
+    showToast('Camera access denied — check browser permissions.');
+  }
+}
+
+// ── WEBSOCKET ──
+function connectWS() {
+  ws = new WebSocket(WS_URL);
+
+  ws.onopen = () => {
+    ws.send(JSON.stringify({ type: 'find' }));
+  };
+
+  ws.onmessage = async (e) => {
+    const msg = JSON.parse(e.data);
+
+    switch (msg.type) {
+      case 'waiting':
+        setRemoteState('searching');
+        break;
+
+      case 'matched':
+        myRole = msg.role;
+        setRemoteState('connecting');
+        await createPeerConnection();
+        if (myRole === 'offerer') {
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          wsSend({ type: 'offer', data: offer });
+        }
+        break;
+
+      case 'offer':
+        await pc.setRemoteDescription(new RTCSessionDescription(msg.data));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        wsSend({ type: 'answer', data: answer });
+        break;
+
+      case 'answer':
+        await pc.setRemoteDescription(new RTCSessionDescription(msg.data));
+        break;
+
+      case 'ice':
+        if (pc && msg.data) {
+          try { await pc.addIceCandidate(new RTCIceCandidate(msg.data)); } catch {}
+        }
+        break;
+
+      case 'peer_left':
+        showToast('Stranger disconnected.');
+        closePeer();
+        setRemoteState('waiting');
+        // Auto re-queue
+        setTimeout(() => {
+          if (ws && ws.readyState === 1) {
+            wsSend({ type: 'find' });
+          }
+        }, 1500);
+        break;
+    }
+  };
+
+  ws.onclose = () => {
+    if (document.getElementById('chat').classList.contains('active')) {
+      showToast('Connection lost. Reconnecting…');
+      setTimeout(connectWS, 2000);
+    }
+  };
+
+  ws.onerror = () => ws.close();
+}
+
+function wsSend(data) {
+  if (ws && ws.readyState === 1) ws.send(JSON.stringify(data));
+}
+
+// ── WEBRTC ──
+async function createPeerConnection() {
+  closePeer();
+  pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+
+  // Add local tracks
+  if (localStream) {
+    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+  }
+
+  // ICE candidates
+  pc.onicecandidate = (e) => {
+    if (e.candidate) wsSend({ type: 'ice', data: e.candidate });
+  };
+
+  // Remote stream
+  pc.ontrack = (e) => {
+    const remoteVid = document.getElementById('remoteVideo');
+    remoteVid.srcObject = e.streams[0];
+    remoteVid.style.display = 'block';
+    document.getElementById('remotePlaceholder').style.display = 'none';
+    showToast('Connected! Say hello 👋');
+  };
+
+  pc.onconnectionstatechange = () => {
+    if (pc && (pc.connectionState === 'disconnected' || pc.connectionState === 'failed')) {
+      setRemoteState('waiting');
+    }
+  };
+}
+
+function closePeer() {
+  if (pc) { pc.close(); pc = null; }
+  const remoteVid = document.getElementById('remoteVideo');
+  remoteVid.srcObject = null;
+  remoteVid.style.display = 'none';
+  document.getElementById('remotePlaceholder').style.display = 'flex';
+}
+
+// ── NEXT ──
+function nextStranger() {
+  closePeer();
+  setRemoteState('searching');
+  wsSend({ type: 'next' });
+}
+
+// ── CLEANUP ──
+function cleanup() {
+  closePeer();
+  if (ws) { ws.onclose = null; ws.close(); ws = null; }
+  if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+  document.getElementById('localVideo').style.display = 'none';
+  document.getElementById('localPlaceholder').style.display = 'flex';
+}
+
+// ── CAMERA / MIC TOGGLES ──
+function toggleCamera() {
+  if (!localStream) return;
+  camOn = !camOn;
+  localStream.getVideoTracks().forEach(t => t.enabled = camOn);
+  document.getElementById('camStatus').textContent = camOn ? 'On' : 'Off';
+  document.getElementById('camStatus').className = 'status' + (camOn ? '' : ' off');
+  document.getElementById('localVideo').style.display = camOn ? 'block' : 'none';
+  document.getElementById('localPlaceholder').style.display = camOn ? 'none' : 'flex';
+}
+
+function toggleMic() {
+  if (!localStream) return;
+  micOn = !micOn;
+  localStream.getAudioTracks().forEach(t => t.enabled = micOn);
+  document.getElementById('micStatus').textContent = micOn ? 'On' : 'Off';
+  document.getElementById('micStatus').className = 'status' + (micOn ? '' : ' off');
+}
+
+// ── UI STATE ──
+function setRemoteState(state) {
+  const anim = document.getElementById('connectingAnim');
+  const icon = document.getElementById('remoteIcon');
+  const status = document.getElementById('remoteStatus');
+
+  anim.style.display = 'none';
+  icon.style.display = 'block';
+
+  if (state === 'searching') {
+    anim.style.display = 'flex';
+    icon.style.display = 'none';
+    status.textContent = 'Finding someone…';
+  } else if (state === 'connecting') {
+    anim.style.display = 'flex';
+    icon.style.display = 'none';
+    status.textContent = 'Connecting…';
+  } else {
+    status.textContent = "Stranger's video will appear here";
+  }
+}
+
+// ── TOAST ──
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
