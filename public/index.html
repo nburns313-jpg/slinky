@@ -793,12 +793,15 @@ function connectWS() {
 
       case 'matched':
         myRole = msg.role;
-        if (msg.profile) {
-          strangerProfile = msg.profile;
-          showMatchedProfile(msg.profile);
-        } else {
-          showMatchingOverlay(true);
+        strangerProfile = (msg.profile && msg.profile.name) ? msg.profile : {};
+
+        // Show profile card for 2.5s, THEN start WebRTC
+        if (strangerProfile.name) {
+          showMatchedProfile(strangerProfile);
+          await new Promise(resolve => setTimeout(resolve, 2500));
+          hideMatchingOverlay();
         }
+
         await createPeerConnection();
         if (myRole === 'offerer') {
           const offer = await pc.createOffer();
@@ -864,16 +867,8 @@ async function createPeerConnection() {
   pc.ontrack = (e) => {
     const remoteVid = document.getElementById('remoteVideo');
     remoteVid.srcObject = e.streams[0];
-    // Don't show video yet — let the profile overlay finish its 2.5s timer
-    // The overlay hides itself after 2.5s via showMatchedProfile's setTimeout
-    // If no profile was shown (empty profile), hide overlay now
-    if (!strangerProfile.name) {
-      remoteVid.style.display = 'block';
-      hideMatchingOverlay();
-    } else {
-      // Video is ready but hidden behind overlay — reveal when overlay hides
-      remoteVid.style.display = 'block';
-    }
+    remoteVid.style.display = 'block';
+    hideMatchingOverlay();
     if (strangerProfile.name) {
       document.getElementById('remoteLabel').textContent = strangerProfile.name;
     }
@@ -931,9 +926,7 @@ function showMatchedProfile(profile) {
   // Set the remote label immediately
   if (profile.name) document.getElementById('remoteLabel').textContent = profile.name;
 
-  // Clear any previous hide timer and set a fresh 2.5s one
-  clearTimeout(window._overlayTimer);
-  window._overlayTimer = setTimeout(hideMatchingOverlay, 2500);
+  // Label is set immediately; overlay hidden by the matched handler after 2.5s await
 }
 
 function hideMatchingOverlay() {
