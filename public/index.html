@@ -864,8 +864,16 @@ async function createPeerConnection() {
   pc.ontrack = (e) => {
     const remoteVid = document.getElementById('remoteVideo');
     remoteVid.srcObject = e.streams[0];
-    remoteVid.style.display = 'block';
-    hideMatchingOverlay();
+    // Don't show video yet — let the profile overlay finish its 2.5s timer
+    // The overlay hides itself after 2.5s via showMatchedProfile's setTimeout
+    // If no profile was shown (empty profile), hide overlay now
+    if (!strangerProfile.name) {
+      remoteVid.style.display = 'block';
+      hideMatchingOverlay();
+    } else {
+      // Video is ready but hidden behind overlay — reveal when overlay hides
+      remoteVid.style.display = 'block';
+    }
     if (strangerProfile.name) {
       document.getElementById('remoteLabel').textContent = strangerProfile.name;
     }
@@ -920,7 +928,12 @@ function showMatchedProfile(profile) {
   document.getElementById('matchDetails').textContent =
     [profile.age ? `${profile.age} years old` : '', profile.location].filter(Boolean).join(' · ');
 
-  setTimeout(hideMatchingOverlay, 2500);
+  // Set the remote label immediately
+  if (profile.name) document.getElementById('remoteLabel').textContent = profile.name;
+
+  // Clear any previous hide timer and set a fresh 2.5s one
+  clearTimeout(window._overlayTimer);
+  window._overlayTimer = setTimeout(hideMatchingOverlay, 2500);
 }
 
 function hideMatchingOverlay() {
