@@ -8,16 +8,20 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
+app.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Waiting queue and active pairs
 const waitingQueue = [];
-const pairs = new Map(); // peerId -> peerId
+const pairs = new Map();
+const clients = new Map();
 
 function send(ws, data) {
-  if (ws && ws.readyState === 1) {
-    ws.send(JSON.stringify(data));
-  }
+  if (ws && ws.readyState === 1) ws.send(JSON.stringify(data));
 }
 
 function tryMatch() {
@@ -26,47 +30,38 @@ function tryMatch() {
     const b = waitingQueue.shift();
 
     if (a.readyState !== 1 || b.readyState !== 1) {
-      // One disconnected while waiting, re-queue the live one
       if (a.readyState === 1) waitingQueue.unshift(a);
       if (b.readyState === 1) waitingQueue.unshift(b);
       continue;
     }
 
-    // Pair them
     pairs.set(a.peerId, b.peerId);
     pairs.set(b.peerId, a.peerId);
     clients.set(a.peerId, a);
     clients.set(b.peerId, b);
 
-    // A is the offerer
-    send(a, { type: 'matched', role: 'offerer', peerId: b.peerId });
-    send(b, { type: 'matched', role: 'answerer', peerId: a.peerId });
+    // Send each user the other's profile
+    send(a, { type: 'matched', role: 'offerer', peerId: b.peerId, profile: b.profile || {} });
+    send(b, { type: 'matched', role: 'answerer', peerId: a.peerId, profile: a.profile || {} });
 
-    console.log(`Matched: ${a.peerId} <-> ${b.peerId}`);
+    console.log(`Matched: ${a.peerId} (${a.profile?.name}) <-> ${b.peerId} (${b.profile?.name})`);
   }
 }
 
-// peerId -> ws
-const clients = new Map();
-
 wss.on('connection', (ws) => {
   ws.peerId = uuidv4();
+  ws.profile = {};
   clients.set(ws.peerId, ws);
-
   send(ws, { type: 'connected', peerId: ws.peerId });
-  console.log(`Connected: ${ws.peerId} | Online: ${clients.size}`);
 
   ws.on('message', (raw) => {
     let msg;
     try { msg = JSON.parse(raw); } catch { return; }
 
     switch (msg.type) {
-
       case 'find': {
-        // Add to waiting queue
-        if (!waitingQueue.includes(ws)) {
-          waitingQueue.push(ws);
-        }
+        if (msg.profile) ws.profile = msg.profile;
+        if (!waitingQueue.includes(ws)) waitingQueue.push(ws);
         send(ws, { type: 'waiting' });
         tryMatch();
         break;
@@ -75,31 +70,25 @@ wss.on('connection', (ws) => {
       case 'offer':
       case 'answer':
       case 'ice': {
-        // Relay WebRTC signals to peer
         const partnerId = pairs.get(ws.peerId);
         const partner = clients.get(partnerId);
-        if (partner) {
-          send(partner, { type: msg.type, data: msg.data });
-        }
+        if (partner) send(partner, { type: msg.type, data: msg.data });
         break;
       }
 
       case 'next': {
-        // Disconnect from current partner, go back to queue
+        if (msg.profile) ws.profile = msg.profile;
         const partnerId = pairs.get(ws.peerId);
         const partner = clients.get(partnerId);
-
         if (partner) {
           send(partner, { type: 'peer_left' });
           pairs.delete(partnerId);
-          // Put partner back in queue
           if (partner.readyState === 1) {
             waitingQueue.push(partner);
             send(partner, { type: 'waiting' });
             tryMatch();
           }
         }
-
         pairs.delete(ws.peerId);
         waitingQueue.push(ws);
         send(ws, { type: 'waiting' });
@@ -110,20 +99,14 @@ wss.on('connection', (ws) => {
   });
 
   ws.on('close', () => {
-    console.log(`Disconnected: ${ws.peerId}`);
     clients.delete(ws.peerId);
-
-    // Remove from queue
     const idx = waitingQueue.indexOf(ws);
     if (idx !== -1) waitingQueue.splice(idx, 1);
-
-    // Notify partner
     const partnerId = pairs.get(ws.peerId);
     const partner = clients.get(partnerId);
     if (partner) {
       send(partner, { type: 'peer_left' });
       pairs.delete(partnerId);
-      // Re-queue partner
       if (partner.readyState === 1) {
         waitingQueue.push(partner);
         send(partner, { type: 'waiting' });
@@ -137,6 +120,4 @@ wss.on('connection', (ws) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Slinky running on port ${PORT}`);
-});
+server.listen(PORT, () => console.log(`Slinky running on port ${PORT}`));
