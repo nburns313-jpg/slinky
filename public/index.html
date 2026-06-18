@@ -497,14 +497,7 @@
 
 <nav>
   <div class="logo" onclick="goHome()">
-    <svg width="30" height="34" viewBox="0 0 34 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M17 2 C10 2, 5 5, 5 8 C5 11, 10 13, 17 13 C24 13, 29 11, 29 8 C29 5, 24 2, 17 2Z" stroke="#6C5CE7" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-      <path d="M5 8 C5 11, 10 13, 17 13 C24 13, 29 11, 29 8 C29 11, 24 14, 17 14 C10 14, 5 11, 5 8Z" stroke="#6C5CE7" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-      <path d="M5 12 C5 15, 10 17.5, 17 17.5 C24 17.5, 29 15, 29 12 C29 15, 24 18, 17 18 C10 18, 5 15, 5 12Z" stroke="#6C5CE7" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-      <path d="M5 16 C5 19, 10 21.5, 17 21.5 C24 21.5, 29 19, 29 16 C29 19, 24 22, 17 22 C10 22, 5 19, 5 16Z" stroke="#6C5CE7" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-      <path d="M7 24 C7 27, 11 29, 17 29 C23 29, 27 27, 27 24 C27 27, 23 30, 17 30 C11 30, 7 27, 7 24Z" stroke="#6C5CE7" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-      <path d="M9 28 C9 31, 12.5 33, 17 33 C21.5 33, 25 31, 25 28" stroke="#6C5CE7" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-    </svg>
+    <img src="/logo.png" style="height:32px; width:auto;" alt="slinky logo" />
     <span class="logo-text">slinky</span>
   </div>
 </nav>
@@ -513,7 +506,7 @@
 <div id="welcome" class="page active">
   <div class="welcome-inner">
     <div class="welcome-badge">Live now · <span id="liveCount">1,247</span> people chatting</div>
-    <h1 class="welcome-h1">Meet someone<br><span>completely random.</span></h1>
+    <h1 class="welcome-h1">The place to meet<br><span>strangers.</span></h1>
     <p class="welcome-sub">One click connects you to a stranger anywhere in the world. No accounts, no profiles, just a conversation.</p>
     <button class="btn-match" onclick="goToProfile()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -714,12 +707,12 @@ let myRole = null;
 
 // ── LIVE COUNT ──
 function startLiveCount() {
-  let count = Math.floor(Math.random() * 2000) + 1000;
+  let count = Math.floor(Math.random() * 30000) + 10000;
   const el = document.getElementById('liveCount');
   el.textContent = count.toLocaleString();
   setInterval(() => {
     const delta = Math.floor(Math.random() * 7) - 3;
-    count = Math.max(800, Math.min(5000, count + delta));
+    count = Math.max(10000, Math.min(50000, count + delta));
     el.textContent = count.toLocaleString();
   }, 3000);
 }
